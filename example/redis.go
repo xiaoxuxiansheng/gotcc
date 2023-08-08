@@ -44,6 +44,6 @@ func BuildTXLockKey(componentID, txID string) string {
 	return fmt.Sprintf("txLockKey:%s:%s", componentID, txID)
 }
 
-func BuildTXIDKey() string {
-	return "gotcc:tx:id"
+func BuildTXRecordLockKey() string {
+	return "gotcc:txRecord:lock"
 }

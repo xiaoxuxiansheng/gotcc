@@ -107,6 +107,7 @@ func (m *MockComponent) Try(ctx context.Context, req *component.TCCReq) (*compon
 	res.ACK = true
 	return &res, nil
 }
+
 func (m *MockComponent) Confirm(ctx context.Context, txID string) (*component.TCCResp, error) {
 	// 基于 txID 维度加锁
 	lock := redis_lock.NewRedisLock(BuildTXLockKey(m.id, txID), m.client)
