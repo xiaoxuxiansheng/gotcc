@@ -8,11 +8,11 @@
 
 ## 📚 前言
 使用此框架实战前，建议先行梳理 tcc 相关理论知识，做到知行合一、收放自如<br/><br/>
-<img src="https://github.com/xiaoxuxiansheng/xtimer/blob/main/img/tcc_theory_frame.png" height="300px"/>
+<img src="https://github.com/xiaoxuxiansheng/gotcc/blob/main/img/tcc_theory_frame.png" height="300px"/>
 
 ## 📖 sdk 核心能力
 实现了 txManager 事务协调器，完成 try-confirm/cancel 二阶段提交流程的组织串联<br/><br/>
-<img src="https://github.com/xiaoxuxiansheng/xtimer/blob/main/img/2pc.png" height="300px"/>
+<img src="https://github.com/xiaoxuxiansheng/gotcc/blob/main/img/2pc.png" height="300px"/>
 
 ## 🖥 接入 sop
 用户需要自行实现事务日志存储模块 TXStore interface 的实现类并完成注入<br/><br/>
