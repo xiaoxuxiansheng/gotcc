@@ -35,10 +35,14 @@ const (
 	// 事务执行中
 	TXHanging TXStatus = "hanging"
 	// 事务成功
-	TXSucceesful TXStatus = "successful"
+	TXSuccessful TXStatus = "successful"
 	// 事务失败
 	TXFailure TXStatus = "failure"
 )
+
+func (t TXStatus) String() string {
+	return string(t)
+}
 
 type ComponentTryStatus string
 
@@ -100,5 +104,5 @@ func (t *Transaction) getStatus(createdBefore time.Time) TXStatus {
 	if hangingExist {
 		return TXHanging
 	}
-	return TXSucceesful
+	return TXSuccessful
 }

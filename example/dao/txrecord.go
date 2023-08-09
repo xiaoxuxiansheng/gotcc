@@ -1,4 +1,4 @@
-package example
+package dao
 
 import (
 	"context"
@@ -6,16 +6,10 @@ import (
 	"gorm.io/gorm"
 )
 
-const (
-	HangingStatus    = 1
-	SuccessfulStatus = 2
-	FailedStatus     = 3
-)
-
 type TXRecordPO struct {
 	gorm.Model
-	Status               int    `gorm:"status"`
-	ComponentTryStatuses string `gorm:"componentTryStatuses"`
+	Status               string `gorm:"status"`
+	ComponentTryStatuses string `gorm:"component_try_statuses"`
 }
 
 func (t TXRecordPO) TableName() string {

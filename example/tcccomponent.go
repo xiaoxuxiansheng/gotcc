@@ -7,6 +7,7 @@ import (
 
 	"github.com/demdxx/gocast"
 	"github.com/xiaoxuxiansheng/gotcc/component"
+	"github.com/xiaoxuxiansheng/gotcc/example/pkg"
 	"github.com/xiaoxuxiansheng/redis_lock"
 )
 
@@ -52,7 +53,7 @@ func (m *MockComponent) ID() string {
 }
 func (m *MockComponent) Try(ctx context.Context, req *component.TCCReq) (*component.TCCResp, error) {
 	// 基于 txID 维度加锁
-	lock := redis_lock.NewRedisLock(BuildTXLockKey(m.id, req.TXID), m.client)
+	lock := redis_lock.NewRedisLock(pkg.BuildTXLockKey(m.id, req.TXID), m.client)
 	if err := lock.Lock(ctx); err != nil {
 		return nil, err
 	}
@@ -61,7 +62,7 @@ func (m *MockComponent) Try(ctx context.Context, req *component.TCCReq) (*compon
 	}()
 
 	// 基于 txID 幂等性去重
-	txStatus, err := m.client.Get(ctx, BuildTXKey(m.id, req.TXID))
+	txStatus, err := m.client.Get(ctx, pkg.BuildTXKey(m.id, req.TXID))
 	if err != nil && !errors.Is(err, redis_lock.ErrNil) {
 		return nil, err
 	}
@@ -84,12 +85,12 @@ func (m *MockComponent) Try(ctx context.Context, req *component.TCCReq) (*compon
 	// 执行 try 操作，将数据状态置为 frozen，倘若这笔
 	bizID := gocast.ToString(req.Data["biz_id"])
 	// 存储 bizID 和事务的关系
-	if _, err = m.client.Set(ctx, BuildTXDetailKey(m.id, req.TXID), bizID); err != nil {
+	if _, err = m.client.Set(ctx, pkg.BuildTXDetailKey(m.id, req.TXID), bizID); err != nil {
 		return nil, err
 	}
 
 	// 要求必须从零到一把 bizID 对应的数据置为冻结态，倘若此前对应状态已存在，则冻结失败
-	reply, err := m.client.SetNX(ctx, BuildDataKey(m.id, req.TXID, bizID), DataFrozen.String())
+	reply, err := m.client.SetNX(ctx, pkg.BuildDataKey(m.id, req.TXID, bizID), DataFrozen.String())
 	if err != nil {
 		return nil, err
 	}
@@ -98,7 +99,7 @@ func (m *MockComponent) Try(ctx context.Context, req *component.TCCReq) (*compon
 	}
 
 	// 更新事务状态
-	_, err = m.client.Set(ctx, BuildTXKey(m.id, req.TXID), TXTried.String())
+	_, err = m.client.Set(ctx, pkg.BuildTXKey(m.id, req.TXID), TXTried.String())
 	if err != nil {
 		return nil, err
 	}
@@ -110,7 +111,7 @@ func (m *MockComponent) Try(ctx context.Context, req *component.TCCReq) (*compon
 
 func (m *MockComponent) Confirm(ctx context.Context, txID string) (*component.TCCResp, error) {
 	// 基于 txID 维度加锁
-	lock := redis_lock.NewRedisLock(BuildTXLockKey(m.id, txID), m.client)
+	lock := redis_lock.NewRedisLock(pkg.BuildTXLockKey(m.id, txID), m.client)
 	if err := lock.Lock(ctx); err != nil {
 		return nil, err
 	}
@@ -119,7 +120,7 @@ func (m *MockComponent) Confirm(ctx context.Context, txID string) (*component.TC
 	}()
 
 	// 1. 要求 txID 此前状态为 tried
-	txStatus, err := m.client.Get(ctx, BuildTXKey(m.id, txID))
+	txStatus, err := m.client.Get(ctx, pkg.BuildTXKey(m.id, txID))
 	if err != nil {
 		return nil, err
 	}
@@ -140,13 +141,13 @@ func (m *MockComponent) Confirm(ctx context.Context, txID string) (*component.TC
 		return &res, nil
 	}
 
-	bizID, err := m.client.Get(ctx, BuildTXDetailKey(m.id, txID))
+	bizID, err := m.client.Get(ctx, pkg.BuildTXDetailKey(m.id, txID))
 	if err != nil {
 		return nil, err
 	}
 
 	// 2. 要求对应的数据状态此前为 frozen
-	dataStatus, err := m.client.Get(ctx, BuildDataKey(m.id, txID, bizID))
+	dataStatus, err := m.client.Get(ctx, pkg.BuildDataKey(m.id, txID, bizID))
 	if err != nil {
 		return nil, err
 	}
@@ -156,12 +157,12 @@ func (m *MockComponent) Confirm(ctx context.Context, txID string) (*component.TC
 	}
 
 	// 连接 redis，把 key 置为 successful，要求 key 此前存在，且 value 状态为 frozen
-	if _, err = m.client.Set(ctx, BuildDataKey(m.id, txID, bizID), DataSuccessful.String()); err != nil {
+	if _, err = m.client.Set(ctx, pkg.BuildDataKey(m.id, txID, bizID), DataSuccessful.String()); err != nil {
 		return nil, err
 	}
 
 	// 把事务状态更新为成功，这一步哪怕失败了也不阻塞主流程
-	_, _ = m.client.Set(ctx, BuildTXKey(m.id, txID), TXConfirmed.String())
+	_, _ = m.client.Set(ctx, pkg.BuildTXKey(m.id, txID), TXConfirmed.String())
 
 	res.ACK = true
 	return &res, nil
@@ -169,7 +170,7 @@ func (m *MockComponent) Confirm(ctx context.Context, txID string) (*component.TC
 
 func (m *MockComponent) Cancel(ctx context.Context, txID string) (*component.TCCResp, error) {
 	// 基于 txID 维度加锁
-	lock := redis_lock.NewRedisLock(BuildTXLockKey(m.id, txID), m.client)
+	lock := redis_lock.NewRedisLock(pkg.BuildTXLockKey(m.id, txID), m.client)
 	if err := lock.Lock(ctx); err != nil {
 		return nil, err
 	}
@@ -178,7 +179,7 @@ func (m *MockComponent) Cancel(ctx context.Context, txID string) (*component.TCC
 	}()
 
 	// 查看事务的状态，只要不是 confirmed，就直接无脑置为 canceld
-	txStatus, err := m.client.Get(ctx, BuildTXKey(m.id, txID))
+	txStatus, err := m.client.Get(ctx, pkg.BuildTXKey(m.id, txID))
 	if err != nil && !errors.Is(err, redis_lock.ErrNil) {
 		return nil, err
 	}
@@ -187,18 +188,18 @@ func (m *MockComponent) Cancel(ctx context.Context, txID string) (*component.TCC
 	}
 
 	// 把对应数据的 key 进行删除
-	bizID, err := m.client.Get(ctx, BuildTXDetailKey(m.id, txID))
+	bizID, err := m.client.Get(ctx, pkg.BuildTXDetailKey(m.id, txID))
 	if err != nil {
 		return nil, err
 	}
 
 	// 删除对应的冻结记录
-	if err = m.client.Del(ctx, BuildDataKey(m.id, txID, bizID)); err != nil {
+	if err = m.client.Del(ctx, pkg.BuildDataKey(m.id, txID, bizID)); err != nil {
 		return nil, err
 	}
 
 	// 把事务状态更新为 canceld
-	_, err = m.client.Set(ctx, BuildTXKey(m.id, txID), TXCanceled.String())
+	_, err = m.client.Set(ctx, pkg.BuildTXKey(m.id, txID), TXCanceled.String())
 	if err != nil {
 		return nil, err
 	}

@@ -1,4 +1,4 @@
-package example
+package dao
 
 import (
 	"github.com/xiaoxuxiansheng/gotcc/txmanager"

@@ -1,7 +1,6 @@
 package example
 
 import (
-	"context"
 	"errors"
 	"fmt"
 	"sync"
@@ -20,7 +19,7 @@ func NewMockRegistryCenter() *MockRegistryCenter {
 	}
 }
 
-func (m *MockRegistryCenter) Register(ctx context.Context, component component.TCCComponent) error {
+func (m *MockRegistryCenter) Register(component component.TCCComponent) error {
 	m.mux.Lock()
 	defer m.mux.Unlock()
 	if _, ok := m.components[component.ID()]; ok {
@@ -30,7 +29,7 @@ func (m *MockRegistryCenter) Register(ctx context.Context, component component.T
 	return nil
 }
 
-func (m *MockRegistryCenter) Components(ctx context.Context, componentIDs ...string) ([]component.TCCComponent, error) {
+func (m *MockRegistryCenter) Components(componentIDs ...string) ([]component.TCCComponent, error) {
 	components := make([]component.TCCComponent, 0, len(componentIDs))
 
 	m.mux.RLock()
