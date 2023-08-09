@@ -1,7 +1,7 @@
 # gotcc
 
 <p align="center">
-<img src="https://github.com/xiaoxuxiansheng/gotcc/blob/main/img/sdk_frame.png" height="400px/>
+<img src="https://github.com/xiaoxuxiansheng/gotcc/blob/main/img/sdk_frame.png" height="400px/">
 <b>gotcc: 纯 golang 实现的 tcc sdk 框架</b>
 <br/><br/>
 </p>
