@@ -120,7 +120,6 @@ func (m *MockTXStore) TXSubmit(ctx context.Context, txID string, success bool) e
 }
 
 // 获取指定的一笔事务
-// 提交事务的最终状态
 func (m *MockTXStore) GetTX(ctx context.Context, txID string) (*txmanager.Transaction, error) {
 	records, err := m.dao.GetTXRecords(ctx, expdao.WithID(gocast.ToUint(txID)))
 	if err != nil {

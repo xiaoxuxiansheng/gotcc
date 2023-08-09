@@ -20,10 +20,10 @@ type TXManager struct {
 	stop           context.CancelFunc
 	opts           *Options
 	txStore        TXStore
-	registryCenter TCCRegistyCenter
+	registryCenter TCCRegistryCenter
 }
 
-func NewTXManager(txStore TXStore, registryCenter TCCRegistyCenter, opts ...Option) *TXManager {
+func NewTXManager(txStore TXStore, registryCenter TCCRegistryCenter, opts ...Option) *TXManager {
 	ctx, cancel := context.WithCancel(context.Background())
 	txManager := TXManager{
 		opts:           &Options{},
