@@ -72,12 +72,10 @@ func (m *MockComponent) Try(ctx context.Context, req *component.TCCReq) (*compon
 		TXID:        req.TXID,
 	}
 	switch txStatus {
-	// 重复的 try 请求，响应成功
-	case TXTried.String(), TXConfirmed.String():
+	case TXTried.String(), TXConfirmed.String(): // 重复的 try 请求，给予成功的响应
 		res.ACK = true
 		return &res, nil
-		// 已 cancel，后受到 try 请求，拒绝
-	case TXCanceled.String():
+	case TXCanceled.String(): // 先 cancel，后收到 try 请求，拒绝
 		return &res, nil
 	default:
 	}
@@ -89,7 +87,7 @@ func (m *MockComponent) Try(ctx context.Context, req *component.TCCReq) (*compon
 		return nil, err
 	}
 
-	// 要求必须从零到一把 bizID 对应的数据置为冻结态，倘若此前对应状态已存在，则冻结失败
+	// 要求必须从零到一把 bizID 对应的数据置为冻结态
 	reply, err := m.client.SetNX(ctx, pkg.BuildDataKey(m.id, req.TXID, bizID), DataFrozen.String())
 	if err != nil {
 		return nil, err
@@ -130,17 +128,15 @@ func (m *MockComponent) Confirm(ctx context.Context, txID string) (*component.TC
 		TXID:        txID,
 	}
 	switch txStatus {
-	// 已 confirm，直接幂等响应
-	case TXConfirmed.String():
+	case TXConfirmed.String(): // 已 confirm，直接幂等响应为成功
 		res.ACK = true
 		return &res, nil
-		// 只有状态为 try 放行
-	case TXTried.String():
-		// 其他情况直接拒绝
-	default:
+	case TXTried.String(): // 只有状态为 try 放行
+	default: // 其他情况直接拒绝
 		return &res, nil
 	}
 
+	// 获取事务对应的 bizID
 	bizID, err := m.client.Get(ctx, pkg.BuildTXDetailKey(m.id, txID))
 	if err != nil {
 		return nil, err
@@ -152,11 +148,11 @@ func (m *MockComponent) Confirm(ctx context.Context, txID string) (*component.TC
 		return nil, err
 	}
 	if dataStatus != DataFrozen.String() {
-		// 非法的状态，拒绝
+		// 非法的数据状态，拒绝
 		return &res, nil
 	}
 
-	// 连接 redis，把 key 置为 successful，要求 key 此前存在，且 value 状态为 frozen
+	// 把对应数据处理状态置为 successful
 	if _, err = m.client.Set(ctx, pkg.BuildDataKey(m.id, txID, bizID), DataSuccessful.String()); err != nil {
 		return nil, err
 	}
@@ -164,6 +160,7 @@ func (m *MockComponent) Confirm(ctx context.Context, txID string) (*component.TC
 	// 把事务状态更新为成功，这一步哪怕失败了也不阻塞主流程
 	_, _ = m.client.Set(ctx, pkg.BuildTXKey(m.id, txID), TXConfirmed.String())
 
+	// 处理成功，给予成功的响应
 	res.ACK = true
 	return &res, nil
 }
@@ -178,22 +175,23 @@ func (m *MockComponent) Cancel(ctx context.Context, txID string) (*component.TCC
 		_ = lock.Unlock(ctx)
 	}()
 
-	// 查看事务的状态，只要不是 confirmed，就直接无脑置为 canceld
+	// 查看事务的状态，只要不是 confirmed，就无脑置为 canceld
 	txStatus, err := m.client.Get(ctx, pkg.BuildTXKey(m.id, txID))
 	if err != nil && !errors.Is(err, redis_lock.ErrNil) {
 		return nil, err
 	}
+	// 先 confirm 后 cancel，属于非法的状态扭转链路
 	if txStatus == TXConfirmed.String() {
 		return nil, fmt.Errorf("invalid tx status: %s, txid: %s", txStatus, txID)
 	}
 
-	// 把对应数据的 key 进行删除
+	// 根据事务获取对应的 bizID
 	bizID, err := m.client.Get(ctx, pkg.BuildTXDetailKey(m.id, txID))
 	if err != nil {
 		return nil, err
 	}
 
-	// 删除对应的冻结记录
+	// 删除对应的 frozen 冻结记录
 	if err = m.client.Del(ctx, pkg.BuildDataKey(m.id, txID, bizID)); err != nil {
 		return nil, err
 	}
