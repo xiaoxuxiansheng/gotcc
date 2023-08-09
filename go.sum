@@ -19,6 +19,8 @@ github.com/stretchr/testify v1.7.0 h1:nwc3DEeHmmLAfoZucVR881uASk0Mfjw8xYJ99tb5Cc
 github.com/stretchr/testify v1.7.0/go.mod h1:6Fq8oRcR53rry900zMqJjRRixrwX3KX962/h/Wwjteg=
 github.com/xiaoxuxiansheng/redis_lock v0.0.0-20230808132115-f8202915899a h1:0EX/iTcWdLOd0l/1QAIrT9HyYLoXXB2Q5pFRX8EK8/4=
 github.com/xiaoxuxiansheng/redis_lock v0.0.0-20230808132115-f8202915899a/go.mod h1:XQBRkFqLOZ84jQ951jpSHFrjEucusKQx+a0+DiS784s=
+github.com/xiaoxuxiansheng/redis_lock v0.0.0-20230809145747-b25757826393 h1:qNmQsKJuBjoidBAo6RJHSYloUTVR2/iTK1C4N0bcHiY=
+github.com/xiaoxuxiansheng/redis_lock v0.0.0-20230809145747-b25757826393/go.mod h1:XQBRkFqLOZ84jQ951jpSHFrjEucusKQx+a0+DiS784s=
 gopkg.in/check.v1 v0.0.0-20161208181325-20d25e280405/go.mod h1:Co6ibVJAznAaIkqp8huTwlJQCZ016jof/cbN4VW5Yz0=
 gopkg.in/yaml.v3 v3.0.0-20200313102051-9f266ea9e77c h1:dUUwHk2QECo/6vqA44rthZ8ie2QXMNeKRTHCNY2nXvo=
 gopkg.in/yaml.v3 v3.0.0-20200313102051-9f266ea9e77c/go.mod h1:K4uyk7z7BCEPqu6E+C64Yfv1cQ7kz7rIZviUmN+EgEM=

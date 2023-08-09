@@ -46,7 +46,7 @@ func (t *TXRecordDAO) CreateTXRecord(ctx context.Context, record *TXRecordPO) (u
 }
 
 func (t *TXRecordDAO) UpdateTXRecord(ctx context.Context, record *TXRecordPO) error {
-	return t.db.WithContext(ctx).Model(&TXRecordPO{}).Updates(record).Error
+	return t.db.WithContext(ctx).Updates(record).Error
 }
 
 func (t *TXRecordDAO) LockAndDo(ctx context.Context, id uint, do func(ctx context.Context, dao *TXRecordDAO, record *TXRecordPO) error) error {

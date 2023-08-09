@@ -10,8 +10,21 @@ import (
 	"github.com/xiaoxuxiansheng/gotcc/txmanager"
 )
 
+const (
+	dsn      = "请输入你的 mysql dsn"
+	network  = "tcp"
+	address  = "请输入你的 redis ip"
+	password = "请输入你的 redis 密码"
+)
+
 func Test_TCC(t *testing.T) {
-	redisClient := pkg.GetRedisClient()
+	redisClient := pkg.NewRedisClient(network, address, password)
+	mysqlDB, err := pkg.NewDB(dsn)
+	if err != nil {
+		t.Error(err)
+		return
+	}
+
 	componentAID := "componentA"
 	componentBID := "componentB"
 	componentCID := "componentC"
@@ -41,13 +54,14 @@ func Test_TCC(t *testing.T) {
 	}
 
 	// 构造出事务日志存储模块
-	txRecordDAO := dao.NewTXRecordDAO(pkg.GetDB())
+	txRecordDAO := dao.NewTXRecordDAO(mysqlDB)
 	txStore := NewMockTXStore(txRecordDAO, redisClient)
 
-	txManager := txmanager.NewTXManager(txStore, registryCenter)
+	txManager := txmanager.NewTXManager(txStore, registryCenter, txmanager.WithMonitorTick(time.Second))
+	<-time.After(time.Second * 20)
 	defer txManager.Stop()
 
-	ctx, cancel := context.WithTimeout(context.Background(), time.Second*10)
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second*30)
 	defer cancel()
 	success, err := txManager.Transaction(ctx, []*txmanager.RequestEntity{
 		{ComponentID: componentAID,

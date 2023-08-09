@@ -37,6 +37,8 @@ func NewTXManager(txStore TXStore, registryCenter TCCRegistryCenter, opts ...Opt
 		opt(txManager.opts)
 	}
 
+	repair(txManager.opts)
+
 	go txManager.run()
 	return &txManager
 }

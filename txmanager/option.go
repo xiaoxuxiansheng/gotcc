@@ -30,3 +30,13 @@ func WithMonitorTick(tick time.Duration) Option {
 		o.MonitorTick = tick
 	}
 }
+
+func repair(o *Options) {
+	if o.MonitorTick <= 0 {
+		o.MonitorTick = 10 * time.Second
+	}
+
+	if o.Timeout <= 0 {
+		o.Timeout = 5 * time.Second
+	}
+}

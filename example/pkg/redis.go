@@ -18,6 +18,10 @@ var (
 	once        sync.Once
 )
 
+func NewRedisClient(network, address, password string) *redis_lock.Client {
+	return redis_lock.NewClient(network, address, password)
+}
+
 func GetRedisClient() *redis_lock.Client {
 	once.Do(func() {
 		redisClient = redis_lock.NewClient(network, address, password)
