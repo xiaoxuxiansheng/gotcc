@@ -35,7 +35,7 @@ func Test_TCC(t *testing.T) {
 	componentC := NewMockComponent(componentCID, redisClient)
 
 	// 创建注册中心
-	registryCenter := NewMockRegistryCenter()
+	registryCenter := txmanager.NewRegistryCenter()
 
 	// 完成各组件的注册
 	if err := registryCenter.Register(componentA); err != nil {
@@ -57,8 +57,7 @@ func Test_TCC(t *testing.T) {
 	txRecordDAO := dao.NewTXRecordDAO(mysqlDB)
 	txStore := NewMockTXStore(txRecordDAO, redisClient)
 
-	txManager := txmanager.NewTXManager(txStore, registryCenter, txmanager.WithMonitorTick(time.Second))
-	<-time.After(time.Second * 20)
+	txManager := txmanager.NewTXManager(txStore, txmanager.WithMonitorTick(time.Second))
 	defer txManager.Stop()
 
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*30)

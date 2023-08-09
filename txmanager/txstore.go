@@ -7,7 +7,7 @@ import (
 	"github.com/xiaoxuxiansheng/gotcc/component"
 )
 
-// 事务日志管理
+// 事务日志存储模块
 type TXStore interface {
 	// 创建一条事务
 	CreateTX(ctx context.Context, components ...component.TCCComponent) (txID string, err error)
