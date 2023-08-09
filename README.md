@@ -14,6 +14,10 @@
 实现了 txManager 事务协调器，完成 try-confirm/cancel 二阶段提交流程的组织串联<br/><br/>
 <img src="https://github.com/xiaoxuxiansheng/gotcc/blob/main/img/2pc.png" height="400px"/>
 
+## 💡 `xTimer` 技术原理
+<a href="https://xxxx">理论篇 待补充</a> <br/><br/>
+<a href="https://xxxx">实战篇 待补充</a>
+
 ## 🖥 接入 sop
 用户需要自行实现事务日志存储模块 TXStore interface 的实现类并完成注入<br/><br/>
 ```
