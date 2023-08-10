@@ -20,7 +20,7 @@
 
 ## 🖥 接入 sop
 用户需要自行实现事务日志存储模块 TXStore interface 的实现类并完成注入<br/><br/>
-```
+```go
 // 事务日志存储模块
 type TXStore interface {
 	// 创建一条事务
@@ -43,7 +43,7 @@ type TXStore interface {
 
 ## 🐧 使用示例
 使用单测示例代码如下. 其中有关于 txStore 模块的实现类示例，同样参见 package example<br/><br/>
-```
+```go
 const (
 	dsn      = "请输入你的 mysql dsn"
 	network  = "tcp"
@@ -68,31 +68,28 @@ func Test_TCC(t *testing.T) {
 	componentB := NewMockComponent(componentBID, redisClient)
 	componentC := NewMockComponent(componentCID, redisClient)
 
-	// 创建注册中心
-	registryCenter := txmanager.NewRegistryCenter()
-
-	// 完成各组件的注册
-	if err := registryCenter.Register(componentA); err != nil {
-		t.Error(err)
-		return
-	}
-
-	if err := registryCenter.Register(componentB); err != nil {
-		t.Error(err)
-		return
-	}
-
-	if err := registryCenter.Register(componentC); err != nil {
-		t.Error(err)
-		return
-	}
-
 	// 构造出事务日志存储模块
 	txRecordDAO := dao.NewTXRecordDAO(mysqlDB)
 	txStore := NewMockTXStore(txRecordDAO, redisClient)
 
 	txManager := txmanager.NewTXManager(txStore, txmanager.WithMonitorTick(time.Second))
 	defer txManager.Stop()
+
+	// 完成各组件的注册
+	if err := txManager.Register(componentA); err != nil {
+		t.Error(err)
+		return
+	}
+
+	if err := txManager.Register(componentB); err != nil {
+		t.Error(err)
+		return
+	}
+
+	if err := txManager.Register(componentC); err != nil {
+		t.Error(err)
+		return
+	}
 
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*30)
 	defer cancel()
@@ -122,7 +119,7 @@ func Test_TCC(t *testing.T) {
 		return
 	}
 
-	t.Error("success")
+	t.Log("success")
 }
 ```
 
