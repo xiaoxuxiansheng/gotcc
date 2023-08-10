@@ -7,14 +7,14 @@
 </p>
 
 ## 📚 前言
-使用此框架实战前，建议先行梳理 tcc 相关理论知识，做到知行合一、收放自如<br/><br/>
+正所谓“理论先行，实践紧随”. 使用此框架实战前，建议先行梳理 tcc 相关理论知识，做到知行合一、收放自如<br/><br/>
 <img src="https://github.com/xiaoxuxiansheng/gotcc/blob/main/img/tcc_theory_frame.png" height="550px"/>
 
 ## 📖 sdk 核心能力
 实现了 txManager 事务协调器，完成 try-confirm/cancel 二阶段提交流程的组织串联<br/><br/>
 <img src="https://github.com/xiaoxuxiansheng/gotcc/blob/main/img/2pc.png" height="400px"/>
 
-## 💡 `xTimer` 技术原理
+## 💡 `tcc` 技术原理篇与开源实战篇技术博客
 <a href="https://xxxx">理论篇 待补充</a> <br/><br/>
 <a href="https://xxxx">实战篇 待补充</a>
 
@@ -42,7 +42,7 @@ type TXStore interface {
 ```
 
 ## 🐧 使用示例
-使用单侧示例代码如下. 其中有关于 txStore 模块的实现类示例，同样参见 package example<br/><br/>
+使用单测示例代码如下. 其中有关于 txStore 模块的实现类示例，同样参见 package example<br/><br/>
 ```
 const (
 	dsn      = "请输入你的 mysql dsn"
