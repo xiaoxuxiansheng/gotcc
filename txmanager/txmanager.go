@@ -20,7 +20,7 @@ type TXManager struct {
 	stop           context.CancelFunc
 	opts           *Options
 	txStore        TXStore
-	registryCenter *RegistryCenter
+	registryCenter *registryCenter
 }
 
 func NewTXManager(txStore TXStore, opts ...Option) *TXManager {
@@ -28,7 +28,7 @@ func NewTXManager(txStore TXStore, opts ...Option) *TXManager {
 	txManager := TXManager{
 		opts:           &Options{},
 		txStore:        txStore,
-		registryCenter: NewRegistryCenter(),
+		registryCenter: newRegistryCenter(),
 		ctx:            ctx,
 		stop:           cancel,
 	}
@@ -45,6 +45,10 @@ func NewTXManager(txStore TXStore, opts ...Option) *TXManager {
 
 func (t *TXManager) Stop() {
 	t.stop()
+}
+
+func (t *TXManager) Register(component component.TCCComponent) error {
+	return t.registryCenter.register(component)
 }
 
 // 事务
@@ -194,7 +198,7 @@ func (t *TXManager) advanceProgress(tx *Transaction) error {
 
 	for _, component := range tx.Components {
 		// 获取对应的 tcc component
-		components, err := t.registryCenter.Components(component.ComponentID)
+		components, err := t.registryCenter.getComponents(component.ComponentID)
 		if err != nil || len(components) == 0 {
 			return errors.New("get tcc component failed")
 		}
@@ -282,7 +286,7 @@ func (t *TXManager) getComponents(ctx context.Context, reqs ...*RequestEntity) (
 	}
 
 	// 校验其合法性
-	components, err := t.registryCenter.Components(componentIDs...)
+	components, err := t.registryCenter.getComponents(componentIDs...)
 	if err != nil {
 		return nil, err
 	}
