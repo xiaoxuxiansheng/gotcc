@@ -39,7 +39,6 @@ type TXStore interface {
 	Unlock(ctx context.Context) error
 }
 ```
-<br/><br/>
 - 用户需要自行实现 TCC 组件 TCCComponent，并将其注册到事务协调器 TXManager <br/><br/>
 ```go
 // tcc 组件
