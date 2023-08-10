@@ -19,8 +19,12 @@ type TCCResp struct {
 
 // tcc 组件
 type TCCComponent interface {
+	// 返回组件唯一 id
 	ID() string
+	// 执行第一阶段的 try 操作
 	Try(ctx context.Context, req *TCCReq) (*TCCResp, error)
+	// 执行第二阶段的 confirm 操作
 	Confirm(ctx context.Context, txID string) (*TCCResp, error)
+	// 执行第二阶段的 cancel 操作
 	Cancel(ctx context.Context, txID string) (*TCCResp, error)
 }
