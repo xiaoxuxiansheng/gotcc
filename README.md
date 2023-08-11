@@ -15,7 +15,7 @@
 <img src="https://github.com/xiaoxuxiansheng/gotcc/blob/main/img/2pc.png" height="400px"/>
 
 ## 💡 `tcc` 技术原理篇与开源实战篇技术博客
-<a href="https://xxxx">理论篇 待补充</a> <br/><br/>
+<a href="https://mp.weixin.qq.com/s?__biz=MzkxMjQzMjA0OQ==&mid=2247484585&idx=1&sn=b5ee56c2334e3cf4e9a1d8d9b54cd02c">理论篇</a> <br/><br/>
 <a href="https://xxxx">实战篇 待补充</a>
 
 ## 🖥 接入 sop
