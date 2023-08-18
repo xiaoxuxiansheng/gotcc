@@ -16,7 +16,7 @@
 
 ## 💡 `tcc` 技术原理篇与开源实战篇技术博客
 <a href="https://mp.weixin.qq.com/s?__biz=MzkxMjQzMjA0OQ==&mid=2247484585&idx=1&sn=b5ee56c2334e3cf4e9a1d8d9b54cd02c">理论篇</a> <br/><br/>
-<a href="https://xxxx">实战篇 待补充</a>
+<a href="https://mp.weixin.qq.com/s?__biz=MzkxMjQzMjA0OQ==&mid=2247484619&idx=1&sn=2415f0b9c1e043c22ae2fd6d75d6cbb3">实战篇</a>
 
 ## 🖥 接入 sop
 - 用户需要自行实现事务日志存储模块 TXStore interface，并将其注入到事务协调器 TXManager <br/><br/>
