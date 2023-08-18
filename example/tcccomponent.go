@@ -188,13 +188,15 @@ func (m *MockComponent) Cancel(ctx context.Context, txID string) (*component.TCC
 
 	// 根据事务获取对应的 bizID
 	bizID, err := m.client.Get(ctx, pkg.BuildTXDetailKey(m.id, txID))
-	if err != nil {
+	if err != nil && errors.Is(err, redis_lock.ErrNil) {
 		return nil, err
 	}
 
-	// 删除对应的 frozen 冻结记录
-	if err = m.client.Del(ctx, pkg.BuildDataKey(m.id, txID, bizID)); err != nil {
-		return nil, err
+	if bizID != "" {
+		// 删除对应的 frozen 冻结记录
+		if err = m.client.Del(ctx, pkg.BuildDataKey(m.id, txID, bizID)); err != nil {
+			return nil, err
+		}
 	}
 
 	// 把事务状态更新为 canceld
