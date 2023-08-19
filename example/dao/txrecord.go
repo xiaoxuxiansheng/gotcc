@@ -2,6 +2,7 @@ package dao
 
 import (
 	"context"
+	"fmt"
 
 	"gorm.io/gorm"
 )
@@ -43,6 +44,10 @@ func (t *TXRecordDAO) GetTXRecords(ctx context.Context, opts ...QueryOption) ([]
 
 func (t *TXRecordDAO) CreateTXRecord(ctx context.Context, record *TXRecordPO) (uint, error) {
 	return record.ID, t.db.WithContext(ctx).Model(&TXRecordPO{}).Create(record).Error
+}
+
+func (t *TXRecordDAO) UpdateComponentStatus(ctx context.Context, id uint, componentID string, status string) error {
+	return t.db.WithContext(ctx).Exec(fmt.Sprintf("update tx_record set component_try_statuses = json_replace(component_try_statuses,'$.%s.tryStatus','%s') where id = %d", componentID, status, id)).Error
 }
 
 func (t *TXRecordDAO) UpdateTXRecord(ctx context.Context, record *TXRecordPO) error {

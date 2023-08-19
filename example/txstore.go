@@ -50,21 +50,12 @@ func (m *MockTXStore) CreateTX(ctx context.Context, components ...component.TCCC
 }
 
 func (m *MockTXStore) TXUpdate(ctx context.Context, txID string, componentID string, accept bool) error {
-	do := func(ctx context.Context, dao *expdao.TXRecordDAO, record *expdao.TXRecordPO) error {
-		componentTryStatuses := make(map[string]*expdao.ComponentTryStatus)
-		_ = json.Unmarshal([]byte(record.ComponentTryStatuses), &componentTryStatuses)
-		if accept {
-			componentTryStatuses[componentID].TryStatus = txmanager.TrySucceesful.String()
-		} else {
-			componentTryStatuses[componentID].TryStatus = txmanager.TryFailure.String()
-		}
-		newBody, _ := json.Marshal(componentTryStatuses)
-		record.ComponentTryStatuses = string(newBody)
-		return dao.UpdateTXRecord(ctx, record)
-	}
-
 	_txID := gocast.ToUint(txID)
-	return m.dao.LockAndDo(ctx, _txID, do)
+	status := txmanager.TXFailure.String()
+	if accept {
+		status = txmanager.TXSuccessful.String()
+	}
+	return m.dao.UpdateComponentStatus(ctx, _txID, componentID, status)
 }
 
 func (m *MockTXStore) GetHangingTXs(ctx context.Context) ([]*txmanager.Transaction, error) {

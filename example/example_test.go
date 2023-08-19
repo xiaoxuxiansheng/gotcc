@@ -11,10 +11,10 @@ import (
 )
 
 const (
-	dsn      = "请输入你的 mysql dsn"
+	dsn      = "请输入 mysql sdn"
 	network  = "tcp"
-	address  = "请输入你的 redis ip"
-	password = "请输入你的 redis 密码"
+	address  = "请输入 redis ip:port"
+	password = "请输入 redis 密码"
 )
 
 func Test_TCC(t *testing.T) {
@@ -84,6 +84,8 @@ func Test_TCC(t *testing.T) {
 		t.Error("tx failed")
 		return
 	}
+
+	<-time.After(2 * time.Second)
 
 	t.Log("success")
 }
