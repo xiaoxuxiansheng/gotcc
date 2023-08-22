@@ -229,29 +229,35 @@ func (t *TXManager) twoPhaseCommit(ctx context.Context, txID string, componentEn
 			// shadow
 			componentEntity := componentEntity
 			wg.Add(1)
-			go func() {
+			go func(fcg context.Context) {
 				defer wg.Done()
-				resp, err := componentEntity.Component.Try(cctx, &component.TCCReq{
-					ComponentID: componentEntity.Component.ID(),
-					TXID:        txID,
-					Data:        componentEntity.Request,
-				})
-				// 但凡有一个 component try 报错或者拒绝，都是需要进行 cancel 的，但会放在 advanceProgressByTXID 流程处理
-				if err != nil || !resp.ACK {
-					log.ErrorContextf(cctx, "tx try failed, tx id: %s, comonent id: %s, err: %v", txID, componentEntity.Component.ID(), err)
-					// 对对应的事务进行更新
-					if _err := t.txStore.TXUpdate(cctx, txID, componentEntity.Component.ID(), false); _err != nil {
-						log.ErrorContextf(cctx, "tx updated failed, tx id: %s, component id: %s, err: %v", txID, componentEntity.Component.ID(), _err)
-					}
-					errCh <- fmt.Errorf("component: %s try failed", componentEntity.Component.ID())
+				select {
+				case <-fcg.Done():
 					return
+				default:
+					resp, err := componentEntity.Component.Try(cctx, &component.TCCReq{
+						ComponentID: componentEntity.Component.ID(),
+						TXID:        txID,
+						Data:        componentEntity.Request,
+					})
+					// 但凡有一个 component try 报错或者拒绝，都是需要进行 cancel 的，但会放在 advanceProgressByTXID 流程处理
+					if err != nil || !resp.ACK {
+						log.ErrorContextf(cctx, "tx try failed, tx id: %s, comonent id: %s, err: %v", txID, componentEntity.Component.ID(), err)
+						// 对对应的事务进行更新
+						if _err := t.txStore.TXUpdate(cctx, txID, componentEntity.Component.ID(), false); _err != nil {
+							log.ErrorContextf(cctx, "tx updated failed, tx id: %s, component id: %s, err: %v", txID, componentEntity.Component.ID(), _err)
+						}
+						errCh <- fmt.Errorf("component: %s try failed", componentEntity.Component.ID())
+						return
+					}
+					// try 请求成功，但是请求结果更新到事务日志失败时，也需要视为处理失败
+					if err = t.txStore.TXUpdate(cctx, txID, componentEntity.Component.ID(), true); err != nil {
+						log.ErrorContextf(cctx, "tx updated failed, tx id: %s, component id: %s, err: %v", txID, componentEntity.Component.ID(), err)
+						errCh <- err
+					}
 				}
-				// try 请求成功，但是请求结果更新到事务日志失败时，也需要视为处理失败
-				if err = t.txStore.TXUpdate(cctx, txID, componentEntity.Component.ID(), true); err != nil {
-					log.ErrorContextf(cctx, "tx updated failed, tx id: %s, component id: %s, err: %v", txID, componentEntity.Component.ID(), err)
-					errCh <- err
-				}
-			}()
+
+			}(cctx)
 		}
 
 		wg.Wait()
