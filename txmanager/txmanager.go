@@ -221,7 +221,7 @@ func (t *TXManager) twoPhaseCommit(ctx context.Context, txID string, componentEn
 	cctx, cancel := context.WithCancel(ctx)
 	defer cancel()
 
-	errCh := make(chan error)
+	errCh := make(chan error, len(componentEntities))
 	go func() {
 		// 并发处理多个 component 的 try 流程
 		var wg sync.WaitGroup
