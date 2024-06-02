@@ -221,6 +221,8 @@ func (t *TXManager) twoPhaseCommit(ctx context.Context, txID string, componentEn
 	cctx, cancel := context.WithCancel(ctx)
 	defer cancel()
 
+	// 并发执行，只要中间某次出现了失败，直接终止流程进行 cancel
+	// 如果全量执行成功，则批量执行 confirm，然后返回成功的 ack，然后
 	errCh := make(chan error, len(componentEntities))
 	go func() {
 		// 并发处理多个 component 的 try 流程
@@ -265,14 +267,12 @@ func (t *TXManager) twoPhaseCommit(ctx context.Context, txID string, componentEn
 		successful = false
 	}
 
-	// 执行二阶段
-	go t.advanceProgressByTXID(txID)
+	// 执行二阶段. 即便第二阶段执行失败也无妨，可以通过轮询任务进行兜底处理
+	if err := t.advanceProgressByTXID(txID); err != nil {
+		log.ErrorContextf(ctx, "advance tx progress fail, txid: %s, err: %v", txID, err)
+	}
 	return successful, nil
 }
-
-// 并发执行，只要中间某次出现了失败，直接终止流程进行 cancel
-
-// 如果全量执行成功，则返回成功的 ack，然后批量执行 confirm
 
 func (t *TXManager) getComponents(ctx context.Context, reqs ...*RequestEntity) (ComponentEntities, error) {
 	if len(reqs) == 0 {
