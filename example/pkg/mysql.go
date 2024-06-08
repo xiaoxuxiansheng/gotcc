@@ -15,8 +15,8 @@ var (
 	dbonce sync.Once
 )
 
-func NewDB(dsn string) (*gorm.DB, error) {
-	return gorm.Open(mysql.Open(dsn), &gorm.Config{})
+func NewDB(dsn string, opts ...gorm.Option) (*gorm.DB, error) {
+	return gorm.Open(mysql.Open(dsn), opts...)
 }
 
 func GetDB() *gorm.DB {

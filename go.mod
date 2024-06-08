@@ -14,6 +14,7 @@ require (
 )
 
 require (
+	github.com/agiledragon/gomonkey/v2 v2.11.0 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/go-sql-driver/mysql v1.7.0 // indirect
 	github.com/gomodule/redigo v1.8.9 // indirect
