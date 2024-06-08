@@ -4,7 +4,6 @@
 <img src="https://github.com/xiaoxuxiansheng/gotcc/blob/main/img/sdk_frame.png" height="400px/"><br/><br/>
 <b>gotcc: 纯 golang 实现的 tcc sdk 框架</b>
 <br/><br/>
-<a title="Build Status" target="_blank" href="https://github.com/xiaoxuxiansheng/gotcc/actions?query=workflow%3ATests"><img src="https://img.shields.io/github/workflow/status/xiaoxuxiansheng/gotcc/Tests?style=flat-square&logo=github-actions" /></a>
 <a title="Codecov" target="_blank" href="https://codecov.io/gh/xiaoxuxiansheng/gotcc"><img src="https://img.shields.io/codecov/c/github/xiaoxuxiansheng/gotcc?style=flat-square&logo=codecov" /></a>
 </p>
 
