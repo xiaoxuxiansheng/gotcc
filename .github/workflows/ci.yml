@@ -1,41 +1,20 @@
-name: ci
-on:
-  push:
-    branches:
-      - master
-      - dev
-      - test
+name: Test and coverage
 
-env:
-  GO111MODULE: on
-  GOPROXY: "https://proxy.golang.org"
+on: [push, pull_request]
 
 jobs:
-  lint:
-    strategy:
-      matrix:
-        os:
-          - ubuntu-latest
-          - macos-latest
-    name: Run golangci-lint
-    runs-on: ${{ matrix.os }}
-
+  build:
+    runs-on: ubuntu-latest
     steps:
-      - name: Setup Go
-        uses: actions/setup-go@v3
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
         with:
-          go-version: '^1.19'
-
-      - name: Checkout repository
-        uses: actions/checkout@v3
-
-      - name: Run unit tests
-        run: go test -v -race -coverprofile="codecov.report" -covermode=atomic
-
+          go-version: 'stable'
+      - name: Gather dependencies
+        run: go mod download
+      - name: Run coverage
+        run: go test -race -coverprofile=coverage.txt -covermode=atomic ./...
       - name: Upload coverage to Codecov
-        uses: codecov/codecov-action@v3
+        uses: codecov/codecov-action@v4
         with:
-          file: ./codecov.report
-          verbose: true
-        env:
-          CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
+          token: ${{ secrets.CODECOV_ORG_TOKEN }}
