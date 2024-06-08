@@ -1,8 +1,14 @@
 name: ci
 on: [push, pull_request]
 jobs:
-  run:
+  build:
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        go: ["1.18.x", "1.19.x"]
+        include:
+        - go: 1.19.x
+          latest: true
   steps:
     - name: Setup Go
       uses: actions/setup-go@v2
