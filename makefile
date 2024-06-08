@@ -1,4 +1,3 @@
 .PHONY: cover
 cover:
-	go test -race -coverprofile=cover.out -coverpkg=./... ./...
-	go tool cover -html=cover.out -o cover.html
+	go test -v -race -coverprofile="codecov.report" -covermode=atomic
