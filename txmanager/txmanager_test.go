@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"math/rand"
 	"sync"
 	"testing"
 	"time"
@@ -173,9 +174,15 @@ func (m *mockComponent) Try(ctx context.Context, req *component.TCCReq) (*compon
 		return &resp, nil
 	}
 
+	if req.Data["reject_flag"] == true {
+		m.statusMachine[req.TXID] = StatusCanceled
+		return &resp, nil
+	}
+
 	if m.statusMachine[req.TXID] != StatusConfirmed {
 		m.statusMachine[req.TXID] = StatusTried
 	}
+
 	resp.ACK = true
 	return &resp, nil
 }
@@ -214,13 +221,14 @@ func (m *mockComponent) Cancel(ctx context.Context, txID string) (*component.TCC
 	}, nil
 }
 
-func Test_txmanager_transaction(t *testing.T) {
+func Test_txmanager_transaction_success(t *testing.T) {
 	txmanager := NewTXManager(newMockTXStore())
 	defer txmanager.Stop()
 
 	// 注册 5 个 component
 	componentsCnt := 5
 	componentReqs := make([]*RequestEntity, 0, componentsCnt)
+	ctx := context.Background()
 	for i := 0; i < componentsCnt; i++ {
 		componentID := cast.ToString(i)
 		if err := txmanager.Register(newMockComponent(componentID)); err != nil {
@@ -232,11 +240,110 @@ func Test_txmanager_transaction(t *testing.T) {
 		})
 	}
 
-	ok, err := txmanager.Transaction(context.Background(), componentReqs...)
+	txid, ok, err := txmanager.Transaction(ctx, componentReqs...)
 	if err != nil {
 		t.Error(err)
 		return
 	}
 
 	assert.Equal(t, true, ok)
+	tx, err := txmanager.txStore.GetTX(ctx, txid)
+	if err != nil {
+		t.Error(err)
+		return
+	}
+	assert.Equal(t, TXSuccessful, tx.Status)
+}
+
+// 验证分布式事务失败场景
+func Test_txmanager_transaction_fail(t *testing.T) {
+	txmanager := NewTXManager(newMockTXStore())
+	defer txmanager.Stop()
+
+	// 注册 5 个 component
+	componentsCnt := 5
+	componentReqs := make([]*RequestEntity, 0, componentsCnt)
+	ctx := context.Background()
+	for i := 0; i < componentsCnt; i++ {
+		componentID := cast.ToString(i)
+		if err := txmanager.Register(newMockComponent(componentID)); err != nil {
+			t.Error(err)
+			return
+		}
+		componentReqs = append(componentReqs, &RequestEntity{
+			ComponentID: componentID,
+			Request: map[string]interface{}{
+				"reject_flag": true,
+			},
+		})
+	}
+
+	txid, ok, err := txmanager.Transaction(ctx, componentReqs...)
+	if err != nil {
+		t.Error(err)
+		return
+	}
+
+	assert.Equal(t, false, ok)
+	tx, err := txmanager.txStore.GetTX(ctx, txid)
+	if err != nil {
+		t.Error(err)
+		return
+	}
+	assert.Equal(t, TXFailure, tx.Status)
+}
+
+func Test_txmanager_transaction_concurrent(t *testing.T) {
+	txmanager := NewTXManager(newMockTXStore(), WithMonitorTick(0), WithTimeout(0))
+	defer txmanager.Stop()
+
+	// 注册 10 个 component
+	componentsCnt := 10
+	for i := 0; i < componentsCnt; i++ {
+		componentID := cast.ToString(i)
+		if err := txmanager.Register(newMockComponent(componentID)); err != nil {
+			t.Error(err)
+			return
+		}
+	}
+
+	// 并发 100 个分布式事务，随机取 3 个 component
+	ctx := context.Background()
+	concurrentTXs := 100
+	componentReqCnt := 3
+	var wg sync.WaitGroup
+	for i := 0; i < concurrentTXs; i++ {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			rander := rand.New(rand.NewSource(time.Now().UnixNano()))
+			componentSet := make(map[string]struct{}, componentReqCnt)
+			for len(componentSet) < componentReqCnt {
+				componentID := cast.ToString(rander.Intn(componentsCnt))
+				componentSet[componentID] = struct{}{}
+			}
+
+			componentReqs := make([]*RequestEntity, 0, componentReqCnt)
+			for componentID := range componentSet {
+				componentReqs = append(componentReqs, &RequestEntity{
+					ComponentID: componentID,
+				})
+			}
+
+			txid, ok, err := txmanager.Transaction(ctx, componentReqs...)
+			if err != nil {
+				t.Error(err)
+				return
+			}
+			assert.Equal(t, true, ok)
+			tx, err := txmanager.txStore.GetTX(ctx, txid)
+			if err != nil {
+				t.Error(err)
+				return
+			}
+			assert.Equal(t, TXSuccessful, tx.Status)
+		}()
+	}
+
+	wg.Wait()
 }

@@ -2,7 +2,7 @@ package example
 
 import (
 	"context"
-	"testing"
+	"fmt"
 	"time"
 
 	"github.com/xiaoxuxiansheng/gotcc/example/dao"
@@ -17,11 +17,11 @@ const (
 	password = "请输入 redis 密码"
 )
 
-func Test_TCC(t *testing.T) {
+func main() {
 	redisClient := pkg.NewRedisClient(network, address, password)
 	mysqlDB, err := pkg.NewDB(dsn)
 	if err != nil {
-		t.Error(err)
+		fmt.Println(err)
 		return
 	}
 
@@ -43,23 +43,23 @@ func Test_TCC(t *testing.T) {
 
 	// 完成各组件的注册
 	if err := txManager.Register(componentA); err != nil {
-		t.Error(err)
+		fmt.Println(err)
 		return
 	}
 
 	if err := txManager.Register(componentB); err != nil {
-		t.Error(err)
+		fmt.Println(err)
 		return
 	}
 
 	if err := txManager.Register(componentC); err != nil {
-		t.Error(err)
+		fmt.Println(err)
 		return
 	}
 
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*30)
 	defer cancel()
-	success, err := txManager.Transaction(ctx, []*txmanager.RequestEntity{
+	_, success, err := txManager.Transaction(ctx, []*txmanager.RequestEntity{
 		{ComponentID: componentAID,
 			Request: map[string]interface{}{
 				"biz_id": componentAID + "_biz",
@@ -77,15 +77,15 @@ func Test_TCC(t *testing.T) {
 		},
 	}...)
 	if err != nil {
-		t.Errorf("tx failed, err: %v", err)
+		fmt.Printf("tx failed, err: %v", err)
 		return
 	}
 	if !success {
-		t.Error("tx failed")
+		fmt.Println("tx failed")
 		return
 	}
 
 	<-time.After(2 * time.Second)
 
-	t.Log("success")
+	fmt.Println("success")
 }

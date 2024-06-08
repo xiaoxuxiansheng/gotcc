@@ -71,19 +71,6 @@ type Transaction struct {
 	CreatedAt  time.Time `json:"createdAt"`
 }
 
-func NewTransaction(txID string, componentEntities ComponentEntities) *Transaction {
-	entities := make([]*ComponentTryEntity, 0, len(componentEntities))
-	for _, componentEntity := range componentEntities {
-		entities = append(entities, &ComponentTryEntity{
-			ComponentID: componentEntity.Component.ID(),
-		})
-	}
-	return &Transaction{
-		TXID:       txID,
-		Components: entities,
-	}
-}
-
 func (t *Transaction) getStatus(createdBefore time.Time) TXStatus {
 	// 获取事务的状态
 	// 1 如果事务超时了，都还未被置为成功，直接置为失败

@@ -12,9 +12,7 @@ import (
 )
 
 // 1. 事务日志存储模块
-
 // 2. TCC 组件注册模块
-
 // 3. 串联两个流程
 type TXManager struct {
 	ctx            context.Context
@@ -53,24 +51,25 @@ func (t *TXManager) Register(component component.TCCComponent) error {
 }
 
 // 事务
-func (t *TXManager) Transaction(ctx context.Context, reqs ...*RequestEntity) (bool, error) {
+func (t *TXManager) Transaction(ctx context.Context, reqs ...*RequestEntity) (string, bool, error) {
 	tctx, cancel := context.WithTimeout(ctx, t.opts.Timeout)
 	defer cancel()
 
 	// 获得所有的组件
 	componentEntities, err := t.getComponents(tctx, reqs...)
 	if err != nil {
-		return false, err
+		return "", false, err
 	}
 
 	// 1 先创建事务明细记录，并取得全局唯一的事务 id
 	txID, err := t.txStore.CreateTX(tctx, componentEntities.ToComponents()...)
 	if err != nil {
-		return false, err
+		return "", false, err
 	}
 
 	// 2. 两阶段提交， try-confirm/cancel
-	return t.twoPhaseCommit(ctx, txID, componentEntities)
+	successful, err := t.twoPhaseCommit(ctx, txID, componentEntities)
+	return txID, successful, err
 }
 
 func (t *TXManager) backOffTick(tick time.Duration) time.Duration {
