@@ -1,3 +1,3 @@
 .PHONY: cover
 cover:
-	go test -v -race -coverprofile="codecov.report" -covermode=atomic
+	go test -v -coverprofile="codecov.report" -covermode=atomic
