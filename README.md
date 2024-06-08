@@ -87,7 +87,7 @@ func Test_TCC(t *testing.T) {
 	txRecordDAO := dao.NewTXRecordDAO(mysqlDB)
 	txStore := NewMockTXStore(txRecordDAO, redisClient)
 
-	txManager := txmanager.NewTXManager(txStore, txmanager.WithMonitorTick(time.Second))
+	txManager := gotcc.NewTXManager(txStore, gotcc.WithMonitorTick(time.Second))
 	defer txManager.Stop()
 
 	// 完成各组件的注册
@@ -108,7 +108,7 @@ func Test_TCC(t *testing.T) {
 
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*30)
 	defer cancel()
-	success, err := txManager.Transaction(ctx, []*txmanager.RequestEntity{
+	success, err := txManager.Transaction(ctx, []*gotcc.RequestEntity{
 		{ComponentID: componentAID,
 			Request: map[string]interface{}{
 				"biz_id": componentAID + "_biz",
