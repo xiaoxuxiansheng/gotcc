@@ -7,6 +7,7 @@ import (
 
 	"github.com/xiaoxuxiansheng/gotcc"
 	"gorm.io/gorm"
+	"gorm.io/gorm/clause"
 )
 
 type TXRecordPO struct {
@@ -54,12 +55,17 @@ func (t *TXRecordDAO) UpdateComponentStatus(ctx context.Context, id uint, compon
 		if err := json.Unmarshal([]byte(record.ComponentTryStatuses), &statuses); err != nil {
 			return err
 		}
-		if statuses[componentID].TryStatus == status {
+
+		componentStatus, ok := statuses[componentID]
+		if !ok {
+			return fmt.Errorf("invalid component: %s in txid: %d", componentID, id)
+		}
+		if componentStatus.TryStatus == status {
 			return nil
 		}
 
-		if statuses[componentID].TryStatus == gotcc.TryHanging.String() {
-			statuses[componentID].TryStatus = status
+		if componentStatus.TryStatus == gotcc.TryHanging.String() {
+			componentStatus.TryStatus = status
 			body, _ := json.Marshal(statuses)
 			record.ComponentTryStatuses = string(body)
 			return dao.UpdateTXRecord(ctx, record)
@@ -77,7 +83,8 @@ func (t *TXRecordDAO) LockAndDo(ctx context.Context, id uint, do func(ctx contex
 	return t.db.Transaction(func(tx *gorm.DB) error {
 		// 加写锁
 		var record TXRecordPO
-		if err := tx.Set("gorm:query_option", "FOR UPDATE").WithContext(ctx).First(&record, id).Error; err != nil {
+
+		if err := tx.WithContext(ctx).Clauses(clause.Locking{Strength: "UPDATE"}).First(&record, id).Error; err != nil {
 			return err
 		}
 
