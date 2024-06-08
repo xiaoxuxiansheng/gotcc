@@ -98,8 +98,7 @@ func (m *MockComponent) Try(ctx context.Context, req *gotcc.TCCReq) (*gotcc.TCCR
 	}
 
 	// 更新事务状态
-	_, err = m.client.Set(ctx, pkg.BuildTXKey(m.id, req.TXID), TXTried.String())
-	if err != nil {
+	if _, err = m.client.Set(ctx, pkg.BuildTXKey(m.id, req.TXID), TXTried.String()); err != nil {
 		return nil, err
 	}
 
@@ -188,22 +187,17 @@ func (m *MockComponent) Cancel(ctx context.Context, txID string) (*gotcc.TCCResp
 
 	// 根据事务获取对应的 bizID
 	bizID, err := m.client.Get(ctx, pkg.BuildTXDetailKey(m.id, txID))
-	if err != nil && errors.Is(err, redis_lock.ErrNil) {
-		return nil, err
-	}
-
-	if bizID != "" {
-		// 删除对应的 frozen 冻结记录
-		if err = m.client.Del(ctx, pkg.BuildDataKey(m.id, txID, bizID)); err != nil {
-			return nil, err
-		}
-	}
-
-	// 把事务状态更新为 canceld
-	_, err = m.client.Set(ctx, pkg.BuildTXKey(m.id, txID), TXCanceled.String())
 	if err != nil {
 		return nil, err
 	}
+
+	// 删除对应的 frozen 冻结记录
+	if err = m.client.Del(ctx, pkg.BuildDataKey(m.id, txID, bizID)); err != nil {
+		return nil, err
+	}
+
+	// 把事务状态更新为 canceld
+	_, _ = m.client.Set(ctx, pkg.BuildTXKey(m.id, txID), TXCanceled.String())
 
 	return &gotcc.TCCResp{
 		ACK:         true,

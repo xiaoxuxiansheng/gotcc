@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"time"
 
 	"github.com/xiaoxuxiansheng/gotcc"
@@ -16,10 +17,10 @@ import (
 
 type MockTXStore struct {
 	client *redis_lock.Client
-	dao    *expdao.TXRecordDAO
+	dao    TXRecordDAO
 }
 
-func NewMockTXStore(dao *expdao.TXRecordDAO, client *redis_lock.Client) *MockTXStore {
+func NewMockTXStore(dao TXRecordDAO, client *redis_lock.Client) *MockTXStore {
 	return &MockTXStore{
 		dao:    dao,
 		client: client,
@@ -100,8 +101,14 @@ func (m *MockTXStore) Unlock(ctx context.Context) error {
 func (m *MockTXStore) TXSubmit(ctx context.Context, txID string, success bool) error {
 	do := func(ctx context.Context, dao *expdao.TXRecordDAO, record *expdao.TXRecordPO) error {
 		if success {
+			if record.Status == gotcc.TXFailure.String() {
+				return fmt.Errorf("invalid tx status: %s, txid: %s", record.Status, txID)
+			}
 			record.Status = gotcc.TXSuccessful.String()
 		} else {
+			if record.Status == gotcc.TXSuccessful.String() {
+				return fmt.Errorf("invalid tx status: %s, txid: %s", record.Status, txID)
+			}
 			record.Status = gotcc.TXFailure.String()
 		}
 		return dao.UpdateTXRecord(ctx, record)
@@ -135,4 +142,12 @@ func (m *MockTXStore) GetTX(ctx context.Context, txID string) (*gotcc.Transactio
 		Components: components,
 		CreatedAt:  records[0].CreatedAt,
 	}, nil
+}
+
+type TXRecordDAO interface {
+	GetTXRecords(ctx context.Context, opts ...expdao.QueryOption) ([]*expdao.TXRecordPO, error)
+	CreateTXRecord(ctx context.Context, record *expdao.TXRecordPO) (uint, error)
+	UpdateComponentStatus(ctx context.Context, id uint, componentID string, status string) error
+	UpdateTXRecord(ctx context.Context, record *expdao.TXRecordPO) error
+	LockAndDo(ctx context.Context, id uint, do func(ctx context.Context, dao *expdao.TXRecordDAO, record *expdao.TXRecordPO) error) error
 }
