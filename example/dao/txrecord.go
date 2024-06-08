@@ -2,8 +2,10 @@ package dao
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 
+	"github.com/xiaoxuxiansheng/gotcc"
 	"gorm.io/gorm"
 )
 
@@ -47,7 +49,24 @@ func (t *TXRecordDAO) CreateTXRecord(ctx context.Context, record *TXRecordPO) (u
 }
 
 func (t *TXRecordDAO) UpdateComponentStatus(ctx context.Context, id uint, componentID string, status string) error {
-	return t.db.WithContext(ctx).Exec(fmt.Sprintf("update tx_record set component_try_statuses = json_replace(component_try_statuses,'$.%s.tryStatus','%s') where id = %d", componentID, status, id)).Error
+	return t.LockAndDo(ctx, id, func(ctx context.Context, dao *TXRecordDAO, record *TXRecordPO) error {
+		var statuses map[string]*ComponentTryStatus
+		if err := json.Unmarshal([]byte(record.ComponentTryStatuses), &statuses); err != nil {
+			return err
+		}
+		if statuses[componentID].TryStatus == status {
+			return nil
+		}
+
+		if statuses[componentID].TryStatus == gotcc.TryHanging.String() {
+			statuses[componentID].TryStatus = status
+			body, _ := json.Marshal(statuses)
+			record.ComponentTryStatuses = string(body)
+			return dao.UpdateTXRecord(ctx, record)
+		}
+
+		return fmt.Errorf("invalid status: %s of component: %s, txid: %d", statuses[componentID].TryStatus, componentID, id)
+	})
 }
 
 func (t *TXRecordDAO) UpdateTXRecord(ctx context.Context, record *TXRecordPO) error {
@@ -56,12 +75,6 @@ func (t *TXRecordDAO) UpdateTXRecord(ctx context.Context, record *TXRecordPO) er
 
 func (t *TXRecordDAO) LockAndDo(ctx context.Context, id uint, do func(ctx context.Context, dao *TXRecordDAO, record *TXRecordPO) error) error {
 	return t.db.Transaction(func(tx *gorm.DB) error {
-		defer func() {
-			if err := recover(); err != nil {
-				tx.Rollback()
-			}
-		}()
-
 		// 加写锁
 		var record TXRecordPO
 		if err := tx.Set("gorm:query_option", "FOR UPDATE").WithContext(ctx).First(&record, id).Error; err != nil {

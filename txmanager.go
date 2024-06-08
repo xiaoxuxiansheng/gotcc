@@ -67,8 +67,7 @@ func (t *TXManager) Transaction(ctx context.Context, reqs ...*RequestEntity) (st
 	}
 
 	// 2. 两阶段提交， try-confirm/cancel
-	successful, err := t.twoPhaseCommit(ctx, txID, componentEntities)
-	return txID, successful, err
+	return txID, t.twoPhaseCommit(ctx, txID, componentEntities), nil
 }
 
 func (t *TXManager) backOffTick(tick time.Duration) time.Duration {
@@ -215,7 +214,7 @@ func (t *TXManager) advanceProgress(tx *Transaction) error {
 	return txAdvanceProgress(t.ctx)
 }
 
-func (t *TXManager) twoPhaseCommit(ctx context.Context, txID string, componentEntities ComponentEntities) (bool, error) {
+func (t *TXManager) twoPhaseCommit(ctx context.Context, txID string, componentEntities ComponentEntities) bool {
 	cctx, cancel := context.WithCancel(ctx)
 	defer cancel()
 
@@ -269,7 +268,7 @@ func (t *TXManager) twoPhaseCommit(ctx context.Context, txID string, componentEn
 	if err := t.advanceProgressByTXID(txID); err != nil {
 		log.ErrorContextf(ctx, "advance tx progress fail, txid: %s, err: %v", txID, err)
 	}
-	return successful, nil
+	return successful
 }
 
 func (t *TXManager) getComponents(ctx context.Context, reqs ...*RequestEntity) (ComponentEntities, error) {

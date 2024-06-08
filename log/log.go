@@ -24,7 +24,7 @@ var (
 )
 
 func init() {
-	defaultLogger = newSugarLogger(NewOptions())
+	defaultLogger = NewSugarLogger(NewOptions())
 }
 
 // Options 选项配置
@@ -88,7 +88,7 @@ type zapLoggerWrapper struct {
 	options Options
 }
 
-func newSugarLogger(options Options) *zapLoggerWrapper {
+func NewSugarLogger(options Options) *zapLoggerWrapper {
 	w := &zapLoggerWrapper{options: options}
 	encoder := w.getEncoder()
 	writeSyncer := w.getLogWriter()

@@ -178,6 +178,11 @@ func (m *mockComponent) Try(ctx context.Context, req *TCCReq) (*TCCResp, error) 
 		return &resp, nil
 	}
 
+	if req.Data["hanging_flag"] == true {
+		<-time.After(time.Second)
+		return &resp, nil
+	}
+
 	if m.statusMachine[req.TXID] != StatusConfirmed {
 		m.statusMachine[req.TXID] = StatusTried
 	}
@@ -345,4 +350,54 @@ func Test_txmanager_transaction_concurrent(t *testing.T) {
 	}
 
 	wg.Wait()
+}
+
+func Test_txmanager_transaction_advance_progress(t *testing.T) {
+	txmanager := NewTXManager(newMockTXStore(), WithMonitorTick(100*time.Millisecond))
+	defer txmanager.Stop()
+
+	// 注册 5 个 component
+	componentsCnt := 5
+	componentReqs := make([]*RequestEntity, 0, componentsCnt)
+	ctx := context.Background()
+	for i := 0; i < componentsCnt; i++ {
+		componentID := cast.ToString(i)
+		if err := txmanager.Register(newMockComponent(componentID)); err != nil {
+			t.Error(err)
+			return
+		}
+		componentReqs = append(componentReqs, &RequestEntity{
+			ComponentID: componentID,
+			Request: map[string]interface{}{
+				"hanging_flag": true,
+			},
+		})
+	}
+
+	txid, ok, err := txmanager.Transaction(ctx, componentReqs...)
+	if err != nil {
+		t.Error(err)
+		return
+	}
+
+	assert.Equal(t, false, ok)
+	tx, err := txmanager.txStore.GetTX(ctx, txid)
+	if err != nil {
+		t.Error(err)
+		return
+	}
+	assert.Equal(t, TXFailure, tx.Status)
+}
+
+func Test_txManager_backOffTick(t *testing.T) {
+	txManager := NewTXManager(newMockTXStore(), WithMonitorTick(time.Second))
+	defer txManager.stop()
+	got := txManager.backOffTick(time.Second)
+	assert.Equal(t, 2*time.Second, got)
+	got = txManager.backOffTick(got)
+	assert.Equal(t, 4*time.Second, got)
+	got = txManager.backOffTick(got)
+	assert.Equal(t, 8*time.Second, got)
+	got = txManager.backOffTick(got)
+	assert.Equal(t, 8*time.Second, got)
 }
