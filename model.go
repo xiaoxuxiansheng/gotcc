@@ -1,9 +1,7 @@
-package txmanager
+package gotcc
 
 import (
 	"time"
-
-	"github.com/xiaoxuxiansheng/gotcc/component"
 )
 
 type RequestEntity struct {
@@ -15,8 +13,8 @@ type RequestEntity struct {
 
 type ComponentEntities []*ComponentEntity
 
-func (c ComponentEntities) ToComponents() []component.TCCComponent {
-	components := make([]component.TCCComponent, 0, len(c))
+func (c ComponentEntities) ToComponents() []TCCComponent {
+	components := make([]TCCComponent, 0, len(c))
 	for _, entity := range c {
 		components = append(components, entity.Component)
 	}
@@ -25,7 +23,7 @@ func (c ComponentEntities) ToComponents() []component.TCCComponent {
 
 type ComponentEntity struct {
 	Request   map[string]interface{}
-	Component component.TCCComponent
+	Component TCCComponent
 }
 
 // 事务状态

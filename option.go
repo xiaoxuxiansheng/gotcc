@@ -1,4 +1,4 @@
-package txmanager
+package gotcc
 
 import "time"
 

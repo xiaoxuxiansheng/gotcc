@@ -1,25 +1,23 @@
-package txmanager
+package gotcc
 
 import (
 	"errors"
 	"fmt"
 	"sync"
-
-	"github.com/xiaoxuxiansheng/gotcc/component"
 )
 
 type registryCenter struct {
 	mux        sync.RWMutex
-	components map[string]component.TCCComponent
+	components map[string]TCCComponent
 }
 
 func newRegistryCenter() *registryCenter {
 	return &registryCenter{
-		components: make(map[string]component.TCCComponent),
+		components: make(map[string]TCCComponent),
 	}
 }
 
-func (r *registryCenter) register(component component.TCCComponent) error {
+func (r *registryCenter) register(component TCCComponent) error {
 	r.mux.Lock()
 	defer r.mux.Unlock()
 	if _, ok := r.components[component.ID()]; ok {
@@ -29,8 +27,8 @@ func (r *registryCenter) register(component component.TCCComponent) error {
 	return nil
 }
 
-func (r *registryCenter) getComponents(componentIDs ...string) ([]component.TCCComponent, error) {
-	components := make([]component.TCCComponent, 0, len(componentIDs))
+func (r *registryCenter) getComponents(componentIDs ...string) ([]TCCComponent, error) {
+	components := make([]TCCComponent, 0, len(componentIDs))
 
 	r.mux.RLock()
 	defer r.mux.RUnlock()

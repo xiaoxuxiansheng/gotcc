@@ -1,4 +1,4 @@
-package txmanager
+package gotcc
 
 import (
 	"context"
@@ -7,7 +7,6 @@ import (
 	"sync"
 	"time"
 
-	"github.com/xiaoxuxiansheng/gotcc/component"
 	"github.com/xiaoxuxiansheng/gotcc/log"
 )
 
@@ -46,7 +45,7 @@ func (t *TXManager) Stop() {
 	t.stop()
 }
 
-func (t *TXManager) Register(component component.TCCComponent) error {
+func (t *TXManager) Register(component TCCComponent) error {
 	return t.registryCenter.register(component)
 }
 
@@ -172,10 +171,10 @@ func (t *TXManager) advanceProgress(tx *Transaction) error {
 
 	// 根据事务是否成功，定制不同的处理函数
 	success := txStatus == TXSuccessful
-	var confirmOrCancel func(ctx context.Context, component component.TCCComponent) (*component.TCCResp, error)
+	var confirmOrCancel func(ctx context.Context, component TCCComponent) (*TCCResp, error)
 	var txAdvanceProgress func(ctx context.Context) error
 	if success {
-		confirmOrCancel = func(ctx context.Context, component component.TCCComponent) (*component.TCCResp, error) {
+		confirmOrCancel = func(ctx context.Context, component TCCComponent) (*TCCResp, error) {
 			// 对 component 进行第二阶段的 confirm 操作
 			return component.Confirm(ctx, tx.TXID)
 		}
@@ -185,7 +184,7 @@ func (t *TXManager) advanceProgress(tx *Transaction) error {
 		}
 
 	} else {
-		confirmOrCancel = func(ctx context.Context, component component.TCCComponent) (*component.TCCResp, error) {
+		confirmOrCancel = func(ctx context.Context, component TCCComponent) (*TCCResp, error) {
 			// 对 component 进行第二阶段的 cancel 操作
 			return component.Cancel(ctx, tx.TXID)
 		}
@@ -232,7 +231,7 @@ func (t *TXManager) twoPhaseCommit(ctx context.Context, txID string, componentEn
 			wg.Add(1)
 			go func() {
 				defer wg.Done()
-				resp, err := componentEntity.Component.Try(cctx, &component.TCCReq{
+				resp, err := componentEntity.Component.Try(cctx, &TCCReq{
 					ComponentID: componentEntity.Component.ID(),
 					TXID:        txID,
 					Data:        componentEntity.Request,

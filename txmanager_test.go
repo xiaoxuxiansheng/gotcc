@@ -1,4 +1,4 @@
-package txmanager
+package gotcc
 
 import (
 	"context"
@@ -12,7 +12,6 @@ import (
 	"github.com/google/uuid"
 	"github.com/spf13/cast"
 	"github.com/stretchr/testify/assert"
-	"github.com/xiaoxuxiansheng/gotcc/component"
 )
 
 type mockTXStore struct {
@@ -27,7 +26,7 @@ func newMockTXStore() TXStore {
 }
 
 // 创建一条事务明细记录
-func (m *mockTXStore) CreateTX(ctx context.Context, components ...component.TCCComponent) (string, error) {
+func (m *mockTXStore) CreateTX(ctx context.Context, components ...TCCComponent) (string, error) {
 	txid := uuid.NewString()
 	m.mutex.Lock()
 	defer m.mutex.Unlock()
@@ -149,7 +148,7 @@ type mockComponent struct {
 	statusMachine map[string]Status
 }
 
-func newMockComponent(id string) component.TCCComponent {
+func newMockComponent(id string) TCCComponent {
 	return &mockComponent{
 		id:            id,
 		statusMachine: make(map[string]Status),
@@ -162,8 +161,8 @@ func (m *mockComponent) ID() string {
 }
 
 // 执行第一阶段的 try 操作
-func (m *mockComponent) Try(ctx context.Context, req *component.TCCReq) (*component.TCCResp, error) {
-	resp := component.TCCResp{
+func (m *mockComponent) Try(ctx context.Context, req *TCCReq) (*TCCResp, error) {
+	resp := TCCResp{
 		ComponentID: m.id,
 		TXID:        req.TXID,
 	}
@@ -188,8 +187,8 @@ func (m *mockComponent) Try(ctx context.Context, req *component.TCCReq) (*compon
 }
 
 // 执行第二阶段的 confirm 操作
-func (m *mockComponent) Confirm(ctx context.Context, txID string) (*component.TCCResp, error) {
-	resp := component.TCCResp{
+func (m *mockComponent) Confirm(ctx context.Context, txID string) (*TCCResp, error) {
+	resp := TCCResp{
 		ComponentID: m.id,
 		TXID:        txID,
 	}
@@ -206,7 +205,7 @@ func (m *mockComponent) Confirm(ctx context.Context, txID string) (*component.TC
 }
 
 // 执行第二阶段的 cancel 操作
-func (m *mockComponent) Cancel(ctx context.Context, txID string) (*component.TCCResp, error) {
+func (m *mockComponent) Cancel(ctx context.Context, txID string) (*TCCResp, error) {
 	m.mutex.Lock()
 	defer m.mutex.Unlock()
 	if m.statusMachine[txID] == StatusConfirmed {
@@ -214,7 +213,7 @@ func (m *mockComponent) Cancel(ctx context.Context, txID string) (*component.TCC
 	}
 
 	m.statusMachine[txID] = StatusCanceled
-	return &component.TCCResp{
+	return &TCCResp{
 		ComponentID: m.id,
 		ACK:         true,
 		TXID:        txID,

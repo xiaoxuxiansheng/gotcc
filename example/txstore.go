@@ -6,10 +6,9 @@ import (
 	"errors"
 	"time"
 
-	"github.com/xiaoxuxiansheng/gotcc/component"
+	"github.com/xiaoxuxiansheng/gotcc"
 	expdao "github.com/xiaoxuxiansheng/gotcc/example/dao"
 	"github.com/xiaoxuxiansheng/gotcc/example/pkg"
-	"github.com/xiaoxuxiansheng/gotcc/txmanager"
 
 	"github.com/demdxx/gocast"
 	"github.com/xiaoxuxiansheng/redis_lock"
@@ -27,19 +26,19 @@ func NewMockTXStore(dao *expdao.TXRecordDAO, client *redis_lock.Client) *MockTXS
 	}
 }
 
-func (m *MockTXStore) CreateTX(ctx context.Context, components ...component.TCCComponent) (string, error) {
+func (m *MockTXStore) CreateTX(ctx context.Context, components ...gotcc.TCCComponent) (string, error) {
 	// 创建一项内容，里面以唯一事务 id 为 key
 	componentTryStatuses := make(map[string]*expdao.ComponentTryStatus, len(components))
 	for _, component := range components {
 		componentTryStatuses[component.ID()] = &expdao.ComponentTryStatus{
 			ComponentID: component.ID(),
-			TryStatus:   txmanager.TryHanging.String(),
+			TryStatus:   gotcc.TryHanging.String(),
 		}
 	}
 
 	statusesBody, _ := json.Marshal(componentTryStatuses)
 	txID, err := m.dao.CreateTXRecord(ctx, &expdao.TXRecordPO{
-		Status:               txmanager.TXHanging.String(),
+		Status:               gotcc.TXHanging.String(),
 		ComponentTryStatuses: string(statusesBody),
 	})
 	if err != nil {
@@ -51,34 +50,34 @@ func (m *MockTXStore) CreateTX(ctx context.Context, components ...component.TCCC
 
 func (m *MockTXStore) TXUpdate(ctx context.Context, txID string, componentID string, accept bool) error {
 	_txID := gocast.ToUint(txID)
-	status := txmanager.TXFailure.String()
+	status := gotcc.TXFailure.String()
 	if accept {
-		status = txmanager.TXSuccessful.String()
+		status = gotcc.TXSuccessful.String()
 	}
 	return m.dao.UpdateComponentStatus(ctx, _txID, componentID, status)
 }
 
-func (m *MockTXStore) GetHangingTXs(ctx context.Context) ([]*txmanager.Transaction, error) {
-	records, err := m.dao.GetTXRecords(ctx, expdao.WithStatus(txmanager.TryHanging))
+func (m *MockTXStore) GetHangingTXs(ctx context.Context) ([]*gotcc.Transaction, error) {
+	records, err := m.dao.GetTXRecords(ctx, expdao.WithStatus(gotcc.TryHanging))
 	if err != nil {
 		return nil, err
 	}
 
-	txs := make([]*txmanager.Transaction, 0, len(records))
+	txs := make([]*gotcc.Transaction, 0, len(records))
 	for _, record := range records {
 		componentTryStatuses := make(map[string]*expdao.ComponentTryStatus)
 		_ = json.Unmarshal([]byte(record.ComponentTryStatuses), &componentTryStatuses)
-		components := make([]*txmanager.ComponentTryEntity, 0, len(componentTryStatuses))
+		components := make([]*gotcc.ComponentTryEntity, 0, len(componentTryStatuses))
 		for _, component := range componentTryStatuses {
-			components = append(components, &txmanager.ComponentTryEntity{
+			components = append(components, &gotcc.ComponentTryEntity{
 				ComponentID: component.ComponentID,
-				TryStatus:   txmanager.ComponentTryStatus(component.TryStatus),
+				TryStatus:   gotcc.ComponentTryStatus(component.TryStatus),
 			})
 		}
 
-		txs = append(txs, &txmanager.Transaction{
+		txs = append(txs, &gotcc.Transaction{
 			TXID:       gocast.ToString(record.ID),
-			Status:     txmanager.TXHanging,
+			Status:     gotcc.TXHanging,
 			CreatedAt:  record.CreatedAt,
 			Components: components,
 		})
@@ -101,9 +100,9 @@ func (m *MockTXStore) Unlock(ctx context.Context) error {
 func (m *MockTXStore) TXSubmit(ctx context.Context, txID string, success bool) error {
 	do := func(ctx context.Context, dao *expdao.TXRecordDAO, record *expdao.TXRecordPO) error {
 		if success {
-			record.Status = txmanager.TXSuccessful.String()
+			record.Status = gotcc.TXSuccessful.String()
 		} else {
-			record.Status = txmanager.TXFailure.String()
+			record.Status = gotcc.TXFailure.String()
 		}
 		return dao.UpdateTXRecord(ctx, record)
 	}
@@ -111,7 +110,7 @@ func (m *MockTXStore) TXSubmit(ctx context.Context, txID string, success bool) e
 }
 
 // 获取指定的一笔事务
-func (m *MockTXStore) GetTX(ctx context.Context, txID string) (*txmanager.Transaction, error) {
+func (m *MockTXStore) GetTX(ctx context.Context, txID string) (*gotcc.Transaction, error) {
 	records, err := m.dao.GetTXRecords(ctx, expdao.WithID(gocast.ToUint(txID)))
 	if err != nil {
 		return nil, err
@@ -123,16 +122,16 @@ func (m *MockTXStore) GetTX(ctx context.Context, txID string) (*txmanager.Transa
 	componentTryStatuses := make(map[string]*expdao.ComponentTryStatus)
 	_ = json.Unmarshal([]byte(records[0].ComponentTryStatuses), &componentTryStatuses)
 
-	components := make([]*txmanager.ComponentTryEntity, 0, len(componentTryStatuses))
+	components := make([]*gotcc.ComponentTryEntity, 0, len(componentTryStatuses))
 	for _, tryItem := range componentTryStatuses {
-		components = append(components, &txmanager.ComponentTryEntity{
+		components = append(components, &gotcc.ComponentTryEntity{
 			ComponentID: tryItem.ComponentID,
-			TryStatus:   txmanager.ComponentTryStatus(tryItem.TryStatus),
+			TryStatus:   gotcc.ComponentTryStatus(tryItem.TryStatus),
 		})
 	}
-	return &txmanager.Transaction{
+	return &gotcc.Transaction{
 		TXID:       txID,
-		Status:     txmanager.TXStatus(records[0].Status),
+		Status:     gotcc.TXStatus(records[0].Status),
 		Components: components,
 		CreatedAt:  records[0].CreatedAt,
 	}, nil

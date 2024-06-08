@@ -1,7 +1,7 @@
 package dao
 
 import (
-	"github.com/xiaoxuxiansheng/gotcc/txmanager"
+	"github.com/xiaoxuxiansheng/gotcc"
 	"gorm.io/gorm"
 )
 
@@ -13,7 +13,7 @@ func WithID(id uint) QueryOption {
 	}
 }
 
-func WithStatus(status txmanager.ComponentTryStatus) QueryOption {
+func WithStatus(status gotcc.ComponentTryStatus) QueryOption {
 	return func(db *gorm.DB) *gorm.DB {
 		return db.Where("status = ?", status.String())
 	}

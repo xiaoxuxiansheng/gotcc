@@ -6,7 +6,7 @@ import (
 	"fmt"
 
 	"github.com/demdxx/gocast"
-	"github.com/xiaoxuxiansheng/gotcc/component"
+	"github.com/xiaoxuxiansheng/gotcc"
 	"github.com/xiaoxuxiansheng/gotcc/example/pkg"
 	"github.com/xiaoxuxiansheng/redis_lock"
 )
@@ -52,7 +52,7 @@ func (m *MockComponent) ID() string {
 	return m.id
 }
 
-func (m *MockComponent) Try(ctx context.Context, req *component.TCCReq) (*component.TCCResp, error) {
+func (m *MockComponent) Try(ctx context.Context, req *gotcc.TCCReq) (*gotcc.TCCResp, error) {
 	// 基于 txID 维度加锁
 	lock := redis_lock.NewRedisLock(pkg.BuildTXLockKey(m.id, req.TXID), m.client)
 	if err := lock.Lock(ctx); err != nil {
@@ -68,7 +68,7 @@ func (m *MockComponent) Try(ctx context.Context, req *component.TCCReq) (*compon
 		return nil, err
 	}
 
-	res := component.TCCResp{
+	res := gotcc.TCCResp{
 		ComponentID: m.id,
 		TXID:        req.TXID,
 	}
@@ -108,7 +108,7 @@ func (m *MockComponent) Try(ctx context.Context, req *component.TCCReq) (*compon
 	return &res, nil
 }
 
-func (m *MockComponent) Confirm(ctx context.Context, txID string) (*component.TCCResp, error) {
+func (m *MockComponent) Confirm(ctx context.Context, txID string) (*gotcc.TCCResp, error) {
 	// 基于 txID 维度加锁
 	lock := redis_lock.NewRedisLock(pkg.BuildTXLockKey(m.id, txID), m.client)
 	if err := lock.Lock(ctx); err != nil {
@@ -124,7 +124,7 @@ func (m *MockComponent) Confirm(ctx context.Context, txID string) (*component.TC
 		return nil, err
 	}
 
-	res := component.TCCResp{
+	res := gotcc.TCCResp{
 		ComponentID: m.id,
 		TXID:        txID,
 	}
@@ -166,7 +166,7 @@ func (m *MockComponent) Confirm(ctx context.Context, txID string) (*component.TC
 	return &res, nil
 }
 
-func (m *MockComponent) Cancel(ctx context.Context, txID string) (*component.TCCResp, error) {
+func (m *MockComponent) Cancel(ctx context.Context, txID string) (*gotcc.TCCResp, error) {
 	// 基于 txID 维度加锁
 	lock := redis_lock.NewRedisLock(pkg.BuildTXLockKey(m.id, txID), m.client)
 	if err := lock.Lock(ctx); err != nil {
@@ -205,7 +205,7 @@ func (m *MockComponent) Cancel(ctx context.Context, txID string) (*component.TCC
 		return nil, err
 	}
 
-	return &component.TCCResp{
+	return &gotcc.TCCResp{
 		ACK:         true,
 		ComponentID: m.id,
 		TXID:        txID,

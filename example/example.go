@@ -5,9 +5,9 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/xiaoxuxiansheng/gotcc"
 	"github.com/xiaoxuxiansheng/gotcc/example/dao"
 	"github.com/xiaoxuxiansheng/gotcc/example/pkg"
-	"github.com/xiaoxuxiansheng/gotcc/txmanager"
 )
 
 const (
@@ -38,7 +38,7 @@ func main() {
 	txRecordDAO := dao.NewTXRecordDAO(mysqlDB)
 	txStore := NewMockTXStore(txRecordDAO, redisClient)
 
-	txManager := txmanager.NewTXManager(txStore, txmanager.WithMonitorTick(time.Second))
+	txManager := gotcc.NewTXManager(txStore, gotcc.WithMonitorTick(time.Second))
 	defer txManager.Stop()
 
 	// 完成各组件的注册
@@ -59,7 +59,7 @@ func main() {
 
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*30)
 	defer cancel()
-	_, success, err := txManager.Transaction(ctx, []*txmanager.RequestEntity{
+	_, success, err := txManager.Transaction(ctx, []*gotcc.RequestEntity{
 		{ComponentID: componentAID,
 			Request: map[string]interface{}{
 				"biz_id": componentAID + "_biz",
