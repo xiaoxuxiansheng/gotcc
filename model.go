@@ -70,13 +70,7 @@ type Transaction struct {
 }
 
 func (t *Transaction) getStatus(createdBefore time.Time) TXStatus {
-	// 获取事务的状态
-	// 1 如果事务超时了，都还未被置为成功，直接置为失败
-	if t.CreatedAt.Before(createdBefore) {
-		return TXFailure
-	}
-
-	// 如果当中出现失败的，直接置为失败
+	// 1 如果当中出现失败的，直接置为失败
 	var hangingExist bool
 	for _, component := range t.Components {
 		if component.TryStatus == TryFailure {
@@ -85,9 +79,16 @@ func (t *Transaction) getStatus(createdBefore time.Time) TXStatus {
 		hangingExist = hangingExist || (component.TryStatus != TrySucceesful)
 	}
 
-	// 如果存在组件 try 操作没执行成功，则返回 hanging 状态
+	// 2 如果存在 hanging 状态，并且已经超时，也直接置为失败
+	if hangingExist && t.CreatedAt.Before(createdBefore) {
+		return TXFailure
+	}
+
+	// 3 如果存在组件 try 操作处于 hanging 状态，则返回 hanging 状态
 	if hangingExist {
 		return TXHanging
 	}
+
+	// 4 走到这个分支必然意味着所有组件的 try 操作都成功了
 	return TXSuccessful
 }
